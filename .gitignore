@@ -1,1 +1,29 @@
-node_modules
+# Dependencies
+node_modules/
+target/
+
+# Build artifacts
+dist/
+build/
+*.exe
+*.dll
+*.pdb
+*.rlib
+
+# Logs
+*.log
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+
+# Backup files
+*.bak
+
+# Environment files
+.env
