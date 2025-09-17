@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schema.tauri.app/config/2.0.0",
+  "productName": "4-AI Lab v2.0",
+  "version": "2.0.0",
+  "identifier": "com.4ai.lab.v2",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devUrl": "http://localhost:1421",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "4-AI Lab v2.0",
+        "width": 1200,
+        "height": 800,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  }
+  ,
+  "plugins": {
+    "dialog": null
+  }
+}

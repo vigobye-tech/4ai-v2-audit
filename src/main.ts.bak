@@ -1,0 +1,13 @@
+// Backup of main.ts before migration to main.tsx
+import './ui/style.css';
+
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { AdvancedUI } from './ui/AdvancedUI';
+
+document.addEventListener('DOMContentLoaded', () => {
+  const root = document.getElementById('app');
+  if (root) {
+    createRoot(root).render(<AdvancedUI />);
+  }
+});
