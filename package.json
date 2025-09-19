@@ -14,8 +14,8 @@
     "check:all": "tsc --noEmit && cd src-tauri && cargo check",
     "audit:lightning": "npm run type-check && cd src-tauri && cargo check && npm test",
     "audit:security": "npm audit && cd src-tauri && cargo audit",
-    "audit:selectors": "grep -r 'prompt-textarea\\|ProseMirror\\|ql-editor\\|searchbox' src/lib/types.ts || echo 'No selector patterns found'",
-    "audit:resources": "grep -A5 -B5 'closeWebview\\|unlisten\\|pool_size' src/ || echo 'Resource patterns check complete'",
+    "audit:selectors": "powershell -Command \"try { Select-String -Path 'src/lib/types.ts' -Pattern 'prompt-textarea|ProseMirror|ql-editor|searchbox' } catch { Write-Host 'No selector patterns found' }\"",
+    "audit:resources": "powershell -Command \"try { Select-String -Path 'src/' -Pattern 'closeWebview|unlisten|pool_size' -Recurse } catch { Write-Host 'Resource patterns check complete' }\"",
     "audit:performance": "npm run build && ls -la dist/ && du -sh dist/ 2>/dev/null || echo 'Performance audit complete'",
     "audit:full": "npm run audit:lightning && npm run audit:security && npm run audit:resources",
     "type-check": "tsc --noEmit"
