@@ -160,7 +160,7 @@ export function createClaudeInjectionScript(prompt: string): string {
       console.log('[4AI Claude] Injection started');
       const allProseMirrors = document.querySelectorAll('.ProseMirror');
       allProseMirrors.forEach((el, idx) => {
-        console.log(`[4AI Claude] .ProseMirror[${idx}]:`, el, 'contenteditable:', el.getAttribute('contenteditable'));
+        console.log('[4AI Claude] .ProseMirror[' + idx + ']:', el, 'contenteditable:', el.getAttribute('contenteditable'));
       });
       const target = document.querySelector('.ProseMirror[contenteditable="true"]');
       console.log('[4AI Claude] Target element:', target);
