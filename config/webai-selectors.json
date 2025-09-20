@@ -1,0 +1,90 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-09-20",
+  "services": {
+    "chatgpt": {
+      "name": "ChatGPT",
+      "url": "https://chat.openai.com",
+      "inputSelectors": [
+        "#prompt-textarea",
+        "textarea[placeholder*='Message']",
+        "[contenteditable='true']"
+      ],
+      "sendSelectors": [
+        "[data-testid='send-button']",
+        "button[aria-label*='Send']",
+        "button[type='submit']"
+      ],
+      "responseSelectors": [
+        "[data-message-author-role='assistant'] .markdown",
+        ".prose",
+        "[data-testid='conversation-turn']"
+      ],
+      "version": "2024-09-19",
+      "fallbackStrategy": "try_all_selectors"
+    },
+    "claude": {
+      "name": "Claude",
+      "url": "https://claude.ai",
+      "inputSelectors": [
+        ".ProseMirror[contenteditable='true']",
+        "[contenteditable='true']",
+        "textarea"
+      ],
+      "sendSelectors": [
+        "button[aria-label='Send Message']",
+        "button[aria-label*='Send']",
+        "[data-testid='send-button']"
+      ],
+      "responseSelectors": [
+        ".font-claude-message",
+        "[data-testid='message-content']",
+        ".prose"
+      ],
+      "version": "2024-09-19",
+      "fallbackStrategy": "try_all_selectors"
+    },
+    "gemini": {
+      "name": "Gemini",
+      "url": "https://gemini.google.com",
+      "inputSelectors": [
+        ".ql-editor[contenteditable='true']",
+        "[contenteditable='true']",
+        "textarea"
+      ],
+      "sendSelectors": [
+        "button[aria-label='Send message']",
+        "[data-testid='send-button']",
+        "button[type='submit']"
+      ],
+      "responseSelectors": [
+        "[data-response-id] .markdown",
+        ".model-response-text",
+        ".response-container"
+      ],
+      "version": "2024-09-19",
+      "fallbackStrategy": "try_all_selectors"
+    },
+    "copilot": {
+      "name": "Microsoft Copilot",
+      "url": "https://copilot.microsoft.com",
+      "inputSelectors": [
+        "#searchbox",
+        "textarea[placeholder*='Ask']",
+        "[contenteditable='true']"
+      ],
+      "sendSelectors": [
+        "#search_icon",
+        "button[aria-label*='Send']",
+        "[data-testid='send-button']"
+      ],
+      "responseSelectors": [
+        "cib-message-group[source='bot'] .ac-textBlock",
+        ".response-message",
+        "[data-testid='bot-message']"
+      ],
+      "version": "2024-09-19",
+      "fallbackStrategy": "try_all_selectors"
+    }
+  }
+}

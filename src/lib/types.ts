@@ -9,6 +9,21 @@ export interface AiService {
   loginSelectors?: string[];
 }
 
+// New config-based interfaces
+export interface SelectorConfig {
+  inputSelectors: string[];
+  sendSelectors: string[];
+  responseSelectors: string[];
+  version: string;
+  fallbackStrategy: 'try_all_selectors' | 'fail_fast';
+}
+
+export interface WebAiSelectorsConfig {
+  version: string;
+  lastUpdated: string;
+  services: Record<AiServiceId, SelectorConfig & { name: string; url: string; }>;
+}
+
 export type ChainTag = 'creative' | 'coding' | 'research' | 'translation';
 
 export interface ChainTemplate {
@@ -17,7 +32,8 @@ export interface ChainTemplate {
   description: string;
 }
 
-export const aiServices: Record<AiServiceId, AiService> = {
+// Default services as fallback when config loading fails
+const defaultAiServices: Record<AiServiceId, AiService> = {
   chatgpt: {
     name: 'ChatGPT',
     url: 'https://chat.openai.com',
@@ -58,3 +74,63 @@ export const aiServices: Record<AiServiceId, AiService> = {
     loginSelectors: ['[data-testid="sign-in"]'],
   },
 };
+
+// Config loading function
+async function loadSelectorConfig(): Promise<Record<AiServiceId, AiService>> {
+  try {
+    // Try to load from config file (different approach for different environments)
+    let configData: WebAiSelectorsConfig;
+    
+    // Check if we're in Node.js environment (tests) vs browser environment
+    if (typeof window === 'undefined') {
+      // Node.js environment - use dynamic import
+      const fs = await import('fs');
+      const path = await import('path');
+      const configPath = path.resolve('./config/webai-selectors.json');
+      const configContent = fs.readFileSync(configPath, 'utf-8');
+      configData = JSON.parse(configContent);
+    } else {
+      // Browser environment - use fetch
+      const configPath = './config/webai-selectors.json';
+      const response = await fetch(configPath);
+      if (!response.ok) {
+        throw new Error(`Config not found: ${configPath}`);
+      }
+      configData = await response.json();
+    }
+    
+    // Validate config structure
+    if (!configData.services || typeof configData.services !== 'object') {
+      console.warn('Invalid config structure, using defaults');
+      return defaultAiServices;
+    }
+    
+    // Transform config to AiService format
+    const services: Record<AiServiceId, AiService> = {} as Record<AiServiceId, AiService>;
+    
+    for (const [serviceId, serviceConfig] of Object.entries(configData.services)) {
+      if (serviceId in defaultAiServices) {
+        const config = serviceConfig as SelectorConfig & { name: string; url: string; };
+        services[serviceId as AiServiceId] = {
+          name: config.name,
+          url: config.url,
+          selectors: config.inputSelectors || [],
+          sendSelector: config.sendSelectors?.[0] || defaultAiServices[serviceId as AiServiceId].sendSelector,
+          responseSelector: config.responseSelectors?.[0] || defaultAiServices[serviceId as AiServiceId].responseSelector,
+          loginSelectors: defaultAiServices[serviceId as AiServiceId].loginSelectors,
+        };
+      }
+    }
+    
+    return services;
+  } catch (error) {
+    console.warn('Failed to load selector config, using defaults:', error);
+    return defaultAiServices;
+  }
+}
+
+// Export a promise that resolves to the loaded services
+export const aiServicesPromise = loadSelectorConfig();
+
+// Export the default services for immediate use (backward compatibility)
+export const aiServices = defaultAiServices;
