@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { invoke } from '@tauri-apps/api/tauri';
 
 export function initDropZone() {
   const dropZone = document.body;
@@ -23,7 +23,7 @@ export function initDropZone() {
     // Akceptujemy tylko pliki (nie foldery)
     const files = [...e.dataTransfer.files] as File[];
     const paths = files
-      .map(f => (f as any).path)
+      .map(f => (f as File & { path?: string }).path)
       .filter(Boolean);
 
     if (paths.length === 0) {

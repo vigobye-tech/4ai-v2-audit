@@ -43,6 +43,36 @@ body {
   gap: 1rem;
 }
 
+/* Mode Indicators */
+.mode-indicator {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.mode-indicator.desktop {
+  background: var(--success);
+  color: white;
+}
+
+.mode-indicator.web {
+  background: var(--warning);
+  color: white;
+}
+
+.info {
+  color: var(--warning);
+  font-size: 0.875rem;
+  margin: 0.5rem 0;
+  padding: 0.5rem;
+  background: rgba(245, 158, 11, 0.1);
+  border-radius: var(--radius);
+  border-left: 3px solid var(--warning);
+}
+
 /* Header */
 .top-bar {
   display: flex;

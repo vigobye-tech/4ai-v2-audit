@@ -22,6 +22,7 @@ export async function runWebViewChain(
     const label = `ai-${serviceId}-${Date.now()}`;
     // Zbuduj prompt dla tej usługi (z kontekstem debaty)
     const promptForThisService = buildChainPrompt(currentPrompt, serviceId, userPrompt);
+    console.log(`[CHAIN DEBUG] Prompt for ${service.name}:`, promptForThisService.slice(0, 300));
 
     try {
       // 1. Create WebView
@@ -67,7 +68,9 @@ export async function runWebViewChain(
         throw new Error(`waitForFullResponse did not return valid result for ${serviceId}: ${waitResult}`);
       }
       currentPrompt = await ipc.getTextContent(label, service.responseSelector);
-      logger.info('webview', `Extracted response`, { service: serviceId, length: currentPrompt.length });
+      logger.info('webview', `Extracted response`, { service: serviceId, length: currentPrompt.length, preview: currentPrompt.slice(0, 100) });
+      console.log(`[CHAIN DEBUG] ${service.name} response (${currentPrompt.length} chars):`, currentPrompt.slice(0, 200));
+      
       // Block chain if response is empty or whitespace
       if (!currentPrompt || !currentPrompt.trim()) {
         logger.error('webview', `Response from ${serviceId} is empty. Blocking chain.`);
@@ -93,8 +96,8 @@ export async function runWebViewChain(
       } else {
         console.log(`WebView for ${service.name} staying open despite error for debugging`);
       }
-      // Continue chain on error, append error message to currentPrompt
-      currentPrompt += `\n❌ Chain failed at ${service.name}: ${error}`;
+      // Stop chain execution on error instead of continuing with corrupted data
+      throw new Error(`Chain failed at ${service.name}: ${error}`);
     }
   }
   return currentPrompt;

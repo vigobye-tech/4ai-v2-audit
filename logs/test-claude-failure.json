@@ -1,0 +1,56 @@
+{
+  "service": "claude",
+  "timestamp": "2025-09-21T12:00:00.000Z",
+  "test_id": "webai-test-001",
+  "overall_success": false,
+  "phases": {
+    "input": {
+      "success": false,
+      "error": "NO_TARGET",
+      "selectors_tried": [
+        {
+          "selector": "div[contenteditable='true'].ProseMirror",
+          "found": false,
+          "error": "Element not found"
+        },
+        {
+          "selector": "[contenteditable='true']",
+          "found": false,
+          "error": "Element not found"
+        },
+        {
+          "selector": "div[role='textbox']",
+          "found": true,
+          "visible": false,
+          "error": "Element not visible"
+        }
+      ],
+      "timing_out": true,
+      "duration_ms": 5000
+    },
+    "send": {
+      "success": false,
+      "error": "BUTTON_NOT_FOUND",
+      "button_disabled": false,
+      "duration_ms": 1000
+    },
+    "response": {
+      "success": false,
+      "timeout": true,
+      "format_changed": false,
+      "duration_ms": 15000
+    }
+  },
+  "performance": {
+    "page_load": 3000,
+    "input_detection": 5000,
+    "send_button": 1000,
+    "response_wait": 15000
+  },
+  "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+  "url": "https://claude.ai",
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  }
+}

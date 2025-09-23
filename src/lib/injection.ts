@@ -5,7 +5,7 @@ export function createInjectionScript(service: AiService, prompt: string, delay 
   return `
     (function(){
       console.log('[4AI] Starting injection for ${service.name}');
-      const prompt = "${prompt}";
+      const prompt = ${JSON.stringify(prompt)};
       const selectors = [
         'div#prompt-textarea.ProseMirror',
         ...${JSON.stringify(service.selectors)}
@@ -126,12 +126,42 @@ export function createGeminiInjectionScript(prompt: string): string {
   return `
     (function() {
       console.log('[4AI Gemini] Injection started');
-      const target = document.querySelector('.ql-editor[contenteditable="true"]');
-      console.log('[4AI Gemini] Target element:', target);
-      if (!target) { console.log('[4AI Gemini] NO_TARGET'); return 'NO_TARGET'; }
+      
+      // Multiple selectors to try (from external config)
+      const inputSelectors = [
+        '.ql-editor[contenteditable="true"]',
+        '[contenteditable="true"]',
+        'textarea',
+        'div[contenteditable="true"]',
+        'input[type="text"]'
+      ];
+      
+      let target = null;
+      for (const sel of inputSelectors) {
+        const elements = document.querySelectorAll(sel);
+        console.log('[4AI Gemini] Selector "' + sel + '" found:', elements.length, 'elements');
+        if (elements.length > 0) {
+          target = elements[elements.length - 1]; // Take last (usually the main input)
+          console.log('[4AI Gemini] Using element:', target);
+          break;
+        }
+      }
+      
+      if (!target) { 
+        console.log('[4AI Gemini] NO_TARGET - tried all selectors'); 
+        return 'NO_TARGET'; 
+      }
 
-      target.textContent = "${prompt}";
-      console.log('[4AI Gemini] Set prompt:', target.textContent);
+      // Set the prompt
+      const promptText = ${JSON.stringify(prompt)};
+      if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT') {
+        target.value = promptText;
+        console.log('[4AI Gemini] Set value to input/textarea');
+      } else {
+        target.textContent = promptText;
+        console.log('[4AI Gemini] Set textContent to contenteditable');
+      }
+      
       target.dispatchEvent(new Event('input', { bubbles: true }));
       console.log('[4AI Gemini] Dispatched input event');
 
@@ -158,16 +188,43 @@ export function createClaudeInjectionScript(prompt: string): string {
   return `
     (function() {
       console.log('[4AI Claude] Injection started');
-      const allProseMirrors = document.querySelectorAll('.ProseMirror');
-      allProseMirrors.forEach((el, idx) => {
-        console.log('[4AI Claude] .ProseMirror[' + idx + ']:', el, 'contenteditable:', el.getAttribute('contenteditable'));
-      });
-      const target = document.querySelector('.ProseMirror[contenteditable="true"]');
-      console.log('[4AI Claude] Target element:', target);
-      if (!target) { console.log('[4AI Claude] NO_TARGET'); return 'NO_TARGET'; }
+      
+      // Multiple selectors to try (from external config)
+      const inputSelectors = [
+        '.ProseMirror[contenteditable="true"]',
+        '[contenteditable="true"]',
+        'div[contenteditable="true"]',
+        'textarea',
+        '#prompt-textarea',
+        '.ql-editor[contenteditable="true"]'
+      ];
+      
+      let target = null;
+      for (const sel of inputSelectors) {
+        const elements = document.querySelectorAll(sel);
+        console.log('[4AI Claude] Selector "' + sel + '" found:', elements.length, 'elements');
+        if (elements.length > 0) {
+          target = elements[elements.length - 1]; // Take last (usually the main input)
+          console.log('[4AI Claude] Using element:', target);
+          break;
+        }
+      }
+      
+      if (!target) { 
+        console.log('[4AI Claude] NO_TARGET - tried all selectors'); 
+        return 'NO_TARGET'; 
+      }
 
-      target.textContent = "${prompt}";
-      console.log('[4AI Claude] Set prompt:', target.textContent);
+      // Set the prompt  
+      const promptText = ${JSON.stringify(prompt)};
+      if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT') {
+        target.value = promptText;
+        console.log('[4AI Claude] Set value to input/textarea');
+      } else {
+        target.textContent = promptText;
+        console.log('[4AI Claude] Set textContent to contenteditable');
+      }
+      
       target.dispatchEvent(new Event('input', { bubbles: true }));
       console.log('[4AI Claude] Dispatched input event');
 

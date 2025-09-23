@@ -1,0 +1,91 @@
+{
+  "monitoring": {
+    "enabled": true,
+    "schedule": {
+      "daily_check": "0 9 * * *",
+      "weekly_audit": "0 15 * * 5",
+      "health_check_interval": 300
+    },
+    "thresholds": {
+      "success_rate": {
+        "green": 95,
+        "yellow": 85,
+        "red": 70
+      },
+      "response_time": {
+        "green": 5000,
+        "yellow": 10000,
+        "red": 30000
+      },
+      "error_rate": {
+        "green": 5,
+        "yellow": 15,
+        "red": 25
+      },
+      "fallback_usage": {
+        "green": 20,
+        "yellow": 40,
+        "red": 60
+      }
+    },
+    "alerts": {
+      "slack": {
+        "enabled": true,
+        "webhook_url": "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK",
+        "channel": "#4ai-alerts",
+        "username": "WebAI Monitor",
+        "emoji": ":robot_face:"
+      },
+      "email": {
+        "enabled": true,
+        "smtp_host": "smtp.gmail.com",
+        "smtp_port": 587,
+        "from": "4ai-monitor@yourcompany.com",
+        "to": [
+          "qa-team@yourcompany.com",
+          "devops@yourcompany.com"
+        ],
+        "escalation_to": [
+          "manager@yourcompany.com"
+        ]
+      },
+      "webhook": {
+        "enabled": false,
+        "url": "https://your-api.com/webhooks/webai-alerts",
+        "auth_token": "your-webhook-auth-token"
+      }
+    },
+    "services": {
+      "chatgpt": {
+        "priority": "high",
+        "check_frequency": "high",
+        "timeout_ms": 15000
+      },
+      "claude": {
+        "priority": "high", 
+        "check_frequency": "high",
+        "timeout_ms": 15000
+      },
+      "gemini": {
+        "priority": "medium",
+        "check_frequency": "medium", 
+        "timeout_ms": 20000
+      },
+      "copilot": {
+        "priority": "medium",
+        "check_frequency": "low",
+        "timeout_ms": 25000
+      }
+    },
+    "reporting": {
+      "save_location": "./logs/webai-monitoring/",
+      "retention_days": 90,
+      "formats": ["json", "txt", "csv"],
+      "dashboard": {
+        "enabled": true,
+        "port": 3000,
+        "refresh_interval": 30
+      }
+    }
+  }
+}

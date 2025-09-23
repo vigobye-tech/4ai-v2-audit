@@ -4,15 +4,15 @@ version = "2.0.0"
 edition = "2021"
 
 [build-dependencies]
-tauri-build = { version = "2", features = [] }
+tauri-build = { version = "1.4.1", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "1.4.1", features = [ "window-unminimize", "fs-read-file", "fs-remove-file", "fs-remove-dir", "fs-create-dir", "window-maximize", "fs-write-file", "window-unmaximize", "window-start-dragging", "window-hide", "global-shortcut-all", "window-show", "fs-rename-file", "clipboard-all", "fs-copy-file", "fs-read-dir", "window-minimize", "window-close", "shell-open"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 chrono = { version = "0.4", features = ["serde"] }
 tokio = { version = "1", features = ["full"] }
-tauri-plugin-dialog = "2.4.0"
+
 
 [profile.release]
 opt-level = 3

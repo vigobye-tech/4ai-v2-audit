@@ -18,6 +18,20 @@ export interface SelectorConfig {
   fallbackStrategy: 'try_all_selectors' | 'fail_fast';
 }
 
+// Unified service interface for backward compatibility
+export interface UnifiedAiService {
+  name: string;
+  url: string;
+  // Legacy format
+  selectors?: string[];
+  sendSelector?: string;
+  responseSelector?: string;
+  // New format  
+  inputSelectors?: string[];
+  sendSelectors?: string[];
+  responseSelectors?: string[];
+}
+
 export interface WebAiSelectorsConfig {
   version: string;
   lastUpdated: string;
@@ -54,7 +68,7 @@ const defaultAiServices: Record<AiServiceId, AiService> = {
     url: 'https://claude.ai',
     selectors: ['[contenteditable="true"]', '.ProseMirror'],
     sendSelector: '[aria-label="Send Message"]',
-    responseSelector: '[data-is-streaming="false"] .font-claude-message',
+    responseSelector: '[data-is-streaming="false"] .font-claude-message, .font-claude-message, [data-role="assistant"], .assistant-response, .claude-response, .response-content',
     loginSelectors: ['[data-testid="login-button"]'],
   },
   gemini: {
@@ -62,7 +76,7 @@ const defaultAiServices: Record<AiServiceId, AiService> = {
     url: 'https://gemini.google.com',
     selectors: ['.ql-editor', '[contenteditable="true"]'],
     sendSelector: '[aria-label="Send message"]',
-    responseSelector: '[data-response-index] .markdown',
+    responseSelector: '[data-response-index] .markdown, .model-response-text, [data-response-index], .response-content .markdown, .bard-response, .gemini-response, .model-response .markdown, [role="presentation"] .markdown',
     loginSelectors: ['[data-action="sign-in"]'],
   },
   copilot: {
@@ -84,8 +98,8 @@ async function loadSelectorConfig(): Promise<Record<AiServiceId, AiService>> {
     // Check if we're in Node.js environment (tests) vs browser environment
     if (typeof window === 'undefined') {
       // Node.js environment - use dynamic import
-      const fs = await import('fs');
-      const path = await import('path');
+      const fs = await import(/* @vite-ignore */ 'fs');
+      const path = await import(/* @vite-ignore */ 'path');
       const configPath = path.resolve('./config/webai-selectors.json');
       const configContent = fs.readFileSync(configPath, 'utf-8');
       configData = JSON.parse(configContent);

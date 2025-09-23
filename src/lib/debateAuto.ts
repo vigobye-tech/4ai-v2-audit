@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { invoke } from '@tauri-apps/api/tauri';
 import { buildChainPrompt } from './relayPrompts';
 import { cleanResponse } from './smartExtract';
 import { logger } from './logger';
@@ -71,15 +71,18 @@ export async function runAutoDebate(
             input.value = '';
             input.textContent = '';
             
+            // Bezpieczne escapowanie promptu
+            const promptText = ${JSON.stringify(promptToSend)};
+            
             // Różne metody wstawiania tekstu
             if (input.value !== undefined) {
-              input.value = \`${promptToSend.replace(/`/g, '\\`')}\`;
+              input.value = promptText;
             }
             if (input.textContent !== undefined) {
-              input.textContent = \`${promptToSend.replace(/`/g, '\\`')}\`;
+              input.textContent = promptText;
             }
             if (input.innerHTML !== undefined) {
-              input.innerHTML = \`${promptToSend.replace(/`/g, '\\`')}\`;
+              input.innerHTML = promptText;
             }
             
             // Symuluj wydarzenia
