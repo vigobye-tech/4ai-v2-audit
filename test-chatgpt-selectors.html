@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test ChatGPT Selectors</title>
+</head>
+<body>
+    <h1>Test ChatGPT Response Selectors</h1>
+    <p>Otwórz ChatGPT i wykonaj to w konsoli:</p>
+    
+    <div style="background: #f5f5f5; padding: 15px; margin: 10px;">
+        <h3>1. Sprawdź aktualne selektory dla odpowiedzi:</h3>
+        <pre id="test1">
+// Test selektorów dla odpowiedzi ChatGPT
+console.log('=== TESTING CHATGPT SELECTORS ===');
+
+const selectors = [
+    '[data-message-author-role="assistant"]',
+    '.markdown.prose', 
+    '[data-testid*="conversation-turn"]',
+    '.group',
+    'div[data-message-id]',
+    '[class*="group/conversation-turn"]',
+    '.result-thinking',
+    'article[data-scroll-anchor]',
+    '.prose',
+    '.whitespace-pre-wrap'
+];
+
+selectors.forEach(selector => {
+    const elements = document.querySelectorAll(selector);
+    console.log(`Selector: ${selector} -> Found: ${elements.length} elements`);
+    if (elements.length > 0) {
+        console.log('First element:', elements[0]);
+        console.log('Text content preview:', elements[0].textContent.substring(0, 100));
+    }
+});
+        </pre>
+    </div>
+
+    <div style="background: #e8f4f8; padding: 15px; margin: 10px;">
+        <h3>2. Sprawdź najnowsze wiadomości:</h3>
+        <pre id="test2">
+// Znajdź najnowsze wiadomości
+console.log('=== TESTING LATEST MESSAGES ===');
+
+// Wszystkie możliwe kontenery wiadomości
+const messageContainers = document.querySelectorAll('div[class*="group"], article, [data-message-id], [data-scroll-anchor]');
+console.log('Total message containers found:', messageContainers.length);
+
+// Pokaż ostatnie 3 kontenery
+if (messageContainers.length > 0) {
+    const lastThree = Array.from(messageContainers).slice(-3);
+    lastThree.forEach((container, index) => {
+        console.log(`Container ${index + 1}:`, container);
+        console.log(`Classes: ${container.className}`);
+        console.log(`Text preview: ${container.textContent.substring(0, 150)}`);
+        console.log('---');
+    });
+}
+        </pre>
+    </div>
+
+    <div style="background: #fff3cd; padding: 15px; margin: 10px;">
+        <h3>3. Sprawdź czy AI jeszcze odpowiada:</h3>
+        <pre id="test3">
+// Sprawdź czy jest animacja "typing" lub inne wskaźniki
+console.log('=== CHECKING TYPING INDICATORS ===');
+
+const typingSelectors = [
+    '[data-testid*="loading"]',
+    '[class*="loading"]',
+    '.result-thinking',
+    '[class*="typing"]',
+    '[class*="generating"]',
+    'svg[class*="animate"]',
+    '.animate-pulse',
+    '.animate-spin'
+];
+
+typingSelectors.forEach(selector => {
+    const elements = document.querySelectorAll(selector);
+    if (elements.length > 0) {
+        console.log(`ACTIVE: ${selector} -> ${elements.length} elements found`);
+    }
+});
+        </pre>
+    </div>
+
+    <script>
+        // Kopiuj kod do schowka po kliknięciu
+        document.querySelectorAll('pre').forEach(pre => {
+            pre.style.cursor = 'pointer';
+            pre.title = 'Kliknij aby skopiować';
+            pre.addEventListener('click', () => {
+                navigator.clipboard.writeText(pre.textContent);
+                pre.style.background = '#d4edda';
+                setTimeout(() => {
+                    pre.style.background = '';
+                }, 1000);
+            });
+        });
+    </script>
+</body>
+</html>

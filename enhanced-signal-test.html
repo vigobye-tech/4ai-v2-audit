@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Enhanced Signal Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f0f8ff; }
+        .test-section { border: 2px solid #007ACC; padding: 15px; margin: 10px 0; background: white; }
+        .status { font-weight: bold; color: #007ACC; margin: 5px 0; }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+        .debug { background: #f5f5f5; padding: 10px; font-family: monospace; white-space: pre-wrap; margin: 10px 0; }
+        button { padding: 10px 20px; margin: 5px; background: #007ACC; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #005a99; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Enhanced DOM Signal Test Suite</h1>
+    
+    <div class="test-section">
+        <h3>🔧 Test 1: Immediate Signal Detection</h3>
+        <div id="test1-status" class="status">Ready...</div>
+        <button onclick="testImmediateSignal()">Test Immediate Signal</button>
+        <button onclick="testTitleCommunication()">Test Title Communication</button>
+        <button onclick="testCustomWebView()">Test Custom WebView</button>
+    </div>
+    
+    <div class="test-section">
+        <h3>📊 Current Signal Elements (for debugging)</h3>
+        <div id="signal-monitor" class="debug">
+            Monitoring DOM for signal elements...
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h3>🔍 Debug Output</h3>
+        <div id="debug-output" class="debug">Ready for testing...</div>
+    </div>
+
+    <script>
+        const debugOutput = document.getElementById('debug-output');
+        const signalMonitor = document.getElementById('signal-monitor');
+        
+        function log(message) {
+            const timestamp = new Date().toISOString();
+            console.log(message);
+            debugOutput.textContent += timestamp + ': ' + message + '\n';
+            debugOutput.scrollTop = debugOutput.scrollHeight;
+        }
+        
+        function updateSignalMonitor() {
+            const signals = [];
+            
+            // Check for __4AI_SIGNAL_ elements
+            const signalElements = document.querySelectorAll('[id^="__4AI_SIGNAL_"]');
+            signalElements.forEach(el => {
+                signals.push(`4AI Signal: ${el.id}, status=${el.getAttribute('data-status')}, response=${el.getAttribute('data-response')}`);
+            });
+            
+            // Check for ai-response-monitor elements
+            const monitorElements = document.querySelectorAll('#ai-response-monitor[data-status]');
+            monitorElements.forEach(el => {
+                signals.push(`Monitor: ${el.id}, status=${el.getAttribute('data-status')}, response=${el.getAttribute('data-response')}`);
+            });
+            
+            // Check title
+            signals.push(`Title: "${document.title}"`);
+            
+            signalMonitor.textContent = signals.length > 1 ? signals.join('\n') : 'No signal elements found';
+        }
+        
+        // Update signal monitor every 500ms
+        setInterval(updateSignalMonitor, 500);
+
+        async function testImmediateSignal() {
+            const status = document.getElementById('test1-status');
+            status.textContent = 'Testing immediate signal...';
+            status.className = 'status';
+            
+            try {
+                log('🔧 Starting test_immediate_signal...');
+                
+                const result = await window.__TAURI__.tauri.invoke('test_immediate_signal');
+                
+                log('📊 Result: ' + result);
+                
+                if (result.includes('DOM_FOUND_') || result.includes('SIGNAL_COMPLETE')) {
+                    status.textContent = 'SUCCESS: Signal detected!';
+                    status.className = 'status success';
+                    log('🎉 SUCCESS: Signal detection working!');
+                } else if (result.includes('ERROR') || result.includes('SIGNAL_ERROR_')) {
+                    status.textContent = 'ERROR: Test failed';
+                    status.className = 'status error';
+                    log('❌ ERROR: Test failed');
+                } else if (result.includes('NO_SIGNALS_')) {
+                    status.textContent = 'WARNING: No signals detected';
+                    status.className = 'status warning';
+                    log('⚠️ WARNING: No signals detected');
+                } else {
+                    status.textContent = 'PARTIAL: Unexpected result';
+                    status.className = 'status warning';
+                    log('🔍 PARTIAL: Unexpected result format');
+                }
+                
+            } catch (error) {
+                log('❌ Error: ' + error.message);
+                status.textContent = 'ERROR: ' + error.message;
+                status.className = 'status error';
+            }
+        }
+
+        async function testTitleCommunication() {
+            log('📄 Testing title communication...');
+            
+            try {
+                const result = await window.__TAURI__.tauri.invoke('test_title_communication', {
+                    label: 'main'
+                });
+                
+                log('📄 Title communication result: ' + result);
+                
+            } catch (error) {
+                log('❌ Title communication error: ' + error.message);
+            }
+        }
+
+        async function testCustomWebView() {
+            log('🚀 Creating custom test WebView...');
+            
+            const testLabel = `custom_test_${Date.now()}`;
+            
+            try {
+                const testHtml = `<html><head><title>Custom Test</title></head><body>
+                    <div id="ai-response-monitor" data-status="monitoring">Starting...</div>
+                    <script>
+                        console.log('[CUSTOM TEST] Started');
+                        setTimeout(() => {
+                            const monitor = document.getElementById('ai-response-monitor');
+                            if (monitor) {
+                                monitor.setAttribute('data-status', 'complete');
+                                monitor.setAttribute('data-response', 'CUSTOM_SUCCESS');
+                                console.log('[CUSTOM TEST] DOM updated');
+                            }
+                            document.title = 'SIGNAL_COMPLETE:true';
+                            console.log('[CUSTOM TEST] Title set');
+                        }, 500);
+                    </script>
+                    <h1>Custom Test WebView</h1>
+                </body></html>`;
+                
+                const dataUrl = 'data:text/html,' + encodeURIComponent(testHtml);
+                
+                await window.__TAURI__.tauri.invoke('create_webview', {
+                    label: testLabel,
+                    url: dataUrl
+                });
+                
+                log('✅ Custom WebView created: ' + testLabel);
+                log('👁️ Check the new window - it should show the test');
+                
+                // Wait a bit, then check title
+                setTimeout(async () => {
+                    try {
+                        const title = await window.__TAURI__.tauri.invoke('get_webview_title', {
+                            label: testLabel
+                        });
+                        log('📄 Custom WebView title: ' + title);
+                        
+                        // Cleanup
+                        await window.__TAURI__.tauri.invoke('close_webview', { label: testLabel });
+                        log('🧹 Custom WebView closed');
+                        
+                    } catch (error) {
+                        log('❌ Custom WebView check failed: ' + error.message);
+                    }
+                }, 2000);
+                
+            } catch (error) {
+                log('❌ Custom WebView creation failed: ' + error.message);
+            }
+        }
+
+        // Initialize
+        window.addEventListener('load', () => {
+            log('🚀 Enhanced Signal Test Suite loaded');
+            log('📋 Available tests:');
+            log('  1. Immediate Signal - Tests our test_immediate_signal function');
+            log('  2. Title Communication - Tests basic title communication');
+            log('  3. Custom WebView - Creates and tests a custom WebView');
+            updateSignalMonitor();
+        });
+    </script>
+</body>
+</html>

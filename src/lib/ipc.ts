@@ -1,20 +1,35 @@
 import type { AiServiceId } from './types';
 
-// Check if we're running in Tauri environment - enhanced detection
-const isTauri = typeof window !== 'undefined' && (
+// Check if we're running in Tauri environment - with polling mechanism per Manus recommendation
+async function waitForTauriApi(timeout = 5000): Promise<boolean> {
+  const startTime = Date.now();
+  while (Date.now() - startTime < timeout) {
+    if (typeof window !== 'undefined' && ('__TAURI_INTERNALS__' in window || '__TAURI__' in window)) {
+      console.log('[DEBUG] Tauri API detected after waiting');
+      return true;
+    }
+    await new Promise(resolve => setTimeout(resolve, 50)); // Check every 50ms
+  }
+  console.log('[DEBUG] Tauri API not detected within timeout');
+  return false;
+}
+
+// Initial synchronous check for immediate availability
+const isTauriSync = typeof window !== 'undefined' && (
   '__TAURI_INTERNALS__' in window || 
-  '__TAURI__' in window ||
-  (window as Record<string, unknown>).__TAURI_INTERNALS__ ||
-  (window as Record<string, unknown>).__TAURI__
+  '__TAURI__' in window
 );
 
-console.log('[DEBUG] ipc.ts - isTauri:', isTauri);
+// Export async function for components to use
+export const waitForTauriEnvironment = waitForTauriApi;
+
+console.log('[DEBUG] ipc.ts - isTauri (sync):', isTauriSync);
 
 // Dynamic import for Tauri API (only available in desktop mode)
 let invoke: ((cmd: string, args?: Record<string, unknown>) => Promise<any>) | null = null;
 
 // Initialize Tauri invoke function asynchronously
-if (isTauri) {
+if (isTauriSync) {
   (async () => {
     try {
       const tauriCore = await import('@tauri-apps/api/tauri');
@@ -82,37 +97,102 @@ const webFallback = {
   }
 };
 
-// Export functions with fallbacks
-export const runChain = (chain: AiServiceId[], prompt: string) =>
-  isTauri && invoke ? invoke('run_chain', { chain, prompt }) : webFallback.runChain(chain, prompt);
+// Enhanced functions with Manus's timing fix - wait for Tauri API before use
+export const runChain = async (chain: AiServiceId[], prompt: string): Promise<string> => {
+  const isTauri = await waitForTauriApi();
+  return isTauri && invoke ? invoke('run_chain', { chain, prompt }) : webFallback.runChain(chain, prompt);
+};
 
-export const copy = (text: string) =>
-  isTauri && invoke ? invoke('safe_copy', { text }) : webFallback.copy(text);
+export const copy = async (text: string): Promise<void> => {
+  const isTauri = await waitForTauriApi();
+  if (isTauri && invoke) {
+    return invoke('safe_copy', { text });
+  } else {
+    await webFallback.copy(text);
+    return;
+  }
+};
 
-export const paste = () =>
-  isTauri && invoke ? invoke('safe_paste') : webFallback.paste();
+export const paste = async (): Promise<string> => {
+  const isTauri = await waitForTauriApi();
+  return isTauri && invoke ? invoke('safe_paste') : webFallback.paste();
+};
 
-export const log = (action: string, details: string) =>
-  isTauri && invoke ? invoke('log_action', { action, details }) : webFallback.log(action, details);
+export const log = async (action: string, details: string): Promise<string> => {
+  const isTauri = await waitForTauriApi();
+  if (isTauri && invoke) {
+    await invoke('log_action', { action, details });
+    return 'OK';
+  } else {
+    return webFallback.log(action, details);
+  }
+};
 
-export const testSelector = (serviceId: AiServiceId) =>
-  isTauri && invoke ? invoke('test_selector', { serviceId }) : webFallback.testSelector(serviceId);
+export const testSelector = async (serviceId: AiServiceId): Promise<boolean> => {
+  const isTauri = await waitForTauriApi();
+  return isTauri && invoke ? invoke('test_selector', { serviceId }) : webFallback.testSelector(serviceId);
+};
 
-// WebView automation
-export const createWebview = (label: string, url: string) =>
-  isTauri && invoke ? invoke('create_webview', { label, url }) : webFallback.createWebview(label, url);
+// WebView automation - CRITICAL: These need desktop environment
+export const createWebview = async (label: string, url: string): Promise<string> => {
+  const isTauri = await waitForTauriApi();
+  console.log('[DEBUG] createWebview - Tauri detected:', isTauri);
+  return isTauri && invoke ? invoke('create_webview', { label, url }) : webFallback.createWebview(label, url);
+};
 
-export const injectScript = (label: string, script: string) =>
-  isTauri && invoke ? invoke('inject_script', { label, script }) : webFallback.injectScript(label, script);
+export const injectScript = async (label: string, script: string): Promise<boolean> => {
+  const isTauri = await waitForTauriApi();
+  return isTauri && invoke ? invoke('inject_script', { label, script }) : webFallback.injectScript(label, script);
+};
 
-export const waitForSelector = (label: string, selector: string, timeoutMs: number) =>
-  isTauri && invoke ? invoke('wait_for_selector', { label, selector, timeout_ms: timeoutMs }) : webFallback.waitForSelector(label, selector, timeoutMs);
+export const waitForSelector = async (label: string, selector: string, timeoutMs: number): Promise<string> => {
+  const isTauri = await waitForTauriApi();
+  return isTauri && invoke ? invoke('wait_for_selector', { label, selector, timeout_ms: timeoutMs }) : webFallback.waitForSelector(label, selector, timeoutMs);
+};
 
-export const waitForFullResponse = (label: string, selector: string, stopWords: string[], timeoutMs: number) =>
-  isTauri && invoke ? invoke('wait_for_full_response', { label, selector, stopWords, timeoutMs }) : webFallback.waitForFullResponse(label, selector, stopWords, timeoutMs);
+export const waitForFullResponse = async (label: string, selector: string, stopWords: string[], timeoutMs: number): Promise<string> => {
+  const isTauri = await waitForTauriApi();
+  return isTauri && invoke ? invoke('wait_for_full_response', { label, selector, stopWords, timeoutMs }) : webFallback.waitForFullResponse(label, selector, stopWords, timeoutMs);
+};
 
-export const getTextContent = (label: string, selector: string) =>
-  isTauri && invoke ? invoke('get_text_content', { label, selector }) : webFallback.getTextContent(label, selector);
+export const getTextContent = async (label: string, selector: string): Promise<string> => {
+  const isTauri = await waitForTauriApi();
+  return isTauri && invoke ? invoke('get_text_content', { label, selector }) : webFallback.getTextContent(label, selector);
+};
 
-export const closeWebview = (label: string) =>
-  isTauri && invoke ? invoke('close_webview', { label }) : webFallback.closeWebview(label);
+export const closeWebview = async (label: string): Promise<boolean> => {
+  const isTauri = await waitForTauriApi();
+  return isTauri && invoke ? invoke('close_webview', { label }) : webFallback.closeWebview(label);
+};
+
+export const waitForResponseEvent = async (label: string, timeoutMs: number): Promise<string> => {
+  const isTauri = await waitForTauriApi();
+  if (isTauri && invoke) {
+    return invoke('wait_for_response_event', { label, timeoutMs });
+  } else {
+    console.warn('Web mode: waitForResponseEvent not available - requires desktop app');
+    return Promise.resolve('Web mode not supported');
+  }
+};
+
+export const extractContentFromWindow = async (label: string, serviceId: string): Promise<string> => {
+  const isTauri = await waitForTauriApi();
+  if (isTauri && invoke) {
+    return invoke('extract_content_from_window', { label, serviceId });
+  } else {
+    console.warn('Web mode: extractContentFromWindow not available - requires desktop app');
+    return Promise.resolve('EXTRACTION_NOT_SUPPORTED');
+  }
+};
+
+export const extractMonitoredContent = async (label: string): Promise<string> => {
+  const isTauri = await waitForTauriApi();
+  if (isTauri && invoke) {
+    return invoke('extract_monitored_content', { label });
+  } else {
+    console.warn('Web mode: extractMonitoredContent not available - requires desktop app');
+    return Promise.resolve('EXTRACTION_NOT_SUPPORTED');
+  }
+};
+
+

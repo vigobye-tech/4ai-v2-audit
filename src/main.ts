@@ -2,7 +2,13 @@ import { runQuickDebate } from './lib/debateAuto';
 import './ui/style.css';
 import { runRealChain } from './lib/webviewChain';
 
-document.addEventListener('DOMContentLoaded', () => {
+declare global {
+  interface Window {
+    titleOnlyTest?: () => Promise<void>;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
   const app = document.getElementById('app');
   if (!app) return;
 
@@ -27,20 +33,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Check if running in desktop mode - enhanced detection
-  console.log('[DEBUG] Window object keys:', Object.keys(window));
-  console.log('[DEBUG] __TAURI_INTERNALS__ exists:', '__TAURI_INTERNALS__' in window);
-  console.log('[DEBUG] __TAURI__ exists:', '__TAURI__' in window);
-  console.log('[DEBUG] window.__TAURI__:', (window as any).__TAURI__);
+  // Check if running in desktop mode - Manus's timing fix implementation
+  console.log('[DEBUG] Starting desktop mode detection...');
   
-  const isDesktop = typeof window !== 'undefined' && (
-    '__TAURI_INTERNALS__' in window || 
-    '__TAURI__' in window ||
-    (window as any).__TAURI_INTERNALS__ ||
-    (window as any).__TAURI__
-  );
+  // Import the waiting function
+  const { waitForTauriEnvironment } = await import('./lib/ipc');
   
-  console.log('[DEBUG] Desktop mode detected:', isDesktop);
+  // Use Manus's recommended polling mechanism
+  const isDesktop = await waitForTauriEnvironment(3000); // 3 second timeout
+  
+  console.log('[DEBUG] Desktop mode detected after waiting:', isDesktop);
+  if (isDesktop) {
+    console.log('[DEBUG] ✅ Tauri API available - Desktop Mode enabled');
+  } else {
+    console.log('[DEBUG] ❌ Tauri API not detected - Falling back to Web Mode');
+  }
   
   const modeIndicator = isDesktop ? 
     '<div class="mode-indicator desktop">🖥️ Desktop Mode</div>' : 
@@ -52,6 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
     <textarea id="promptInput" placeholder="Wpisz temat debaty..." rows="4" cols="60"></textarea><br>
     <button id="quickDebateBtn">💬 Quick Debate</button>
     <button id="creativeBtn">🎨 Creative</button>
+    ${isDesktop ? '<button id="titleTestBtn">🧪 Test Title Communication</button>' : ''}
     ${!isDesktop ? '<p class="info">⚠️ Creative chains require desktop app for WebView automation</p>' : ''}
     <div id="results"></div>
   `;
@@ -79,4 +87,36 @@ document.addEventListener('DOMContentLoaded', () => {
       results.innerHTML = `<pre class="error-message">❌ Chain execution failed:\n${error}</pre>`;
     }
   };
+
+  // Add title test button handler if in desktop mode
+  if (isDesktop) {
+    const titleTestBtn = document.getElementById('titleTestBtn');
+    if (titleTestBtn) {
+      titleTestBtn.onclick = async () => {
+        results.innerHTML = '🧪 Running title communication test...';
+        try {
+          if (window.titleOnlyTest) {
+            // Redirect console to results
+            const originalLog = console.log;
+            let testOutput = '';
+            console.log = (...args) => {
+              testOutput += args.join(' ') + '\n';
+              originalLog(...args);
+            };
+            
+            await window.titleOnlyTest();
+            
+            // Restore console
+            console.log = originalLog;
+            
+            results.innerHTML = `<pre>${testOutput}</pre>`;
+          } else {
+            results.innerHTML = '<pre>❌ Title test not available</pre>';
+          }
+        } catch (error) {
+          results.innerHTML = `<pre>❌ Title test failed: ${error}</pre>`;
+        }
+      };
+    }
+  }
 });

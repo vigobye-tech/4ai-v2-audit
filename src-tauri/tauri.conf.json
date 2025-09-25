@@ -43,6 +43,9 @@
       },
       "clipboard": {
         "all": true
+      },
+      "path": {
+        "all": true
       }
     },
     "bundle": {
@@ -55,10 +58,35 @@
         "icons/128x128@2x.png",
         "icons/icon.icns",
         "icons/icon.ico"
+      ],
+      "resources": [
+        "../config/webai-selectors.json"
       ]
     },
     "security": {
-      "csp": null
+      "csp": null,
+      "dangerousRemoteDomainIpcAccess": [
+        {
+          "domain": "chat.openai.com",
+          "windows": ["*"],
+          "plugins": ["*"]
+        },
+        {
+          "domain": "chatgpt.com", 
+          "windows": ["*"],
+          "plugins": ["*"]
+        },
+        {
+          "domain": "claude.ai",
+          "windows": ["*"], 
+          "plugins": ["*"]
+        },
+        {
+          "domain": "gemini.google.com",
+          "windows": ["*"],
+          "plugins": ["*"]
+        }
+      ]
     },
     "windows": [
       {

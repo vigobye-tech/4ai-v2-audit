@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Immediate Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .status { font-weight: bold; margin: 10px 0; }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Simple Immediate Signal Test</h1>
+    
+    <div id="status" class="status">Initializing...</div>
+    <button onclick="runTest()" id="testBtn">Run Test</button>
+    
+    <h3>Test Results:</h3>
+    <pre id="results"></pre>
+    
+    <script>
+        const { invoke } = window.__TAURI__.tauri;
+        const statusDiv = document.getElementById('status');
+        const resultsDiv = document.getElementById('results');
+        
+        function updateStatus(message, type = '') {
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+        
+        function addResult(message) {
+            resultsDiv.textContent += new Date().toISOString() + ': ' + message + '\n';
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+        
+        async function runTest() {
+            updateStatus('Running test...', '');
+            addResult('🧪 Starting immediate signal test...');
+            
+            try {
+                const result = await invoke('test_immediate_signal');
+                addResult('📊 Test result: ' + result);
+                
+                if (result.includes('DOM_FOUND_') || result.includes('SIGNAL_COMPLETE')) {
+                    updateStatus('SUCCESS: Signal detection working!', 'success');
+                    addResult('🎉 SUCCESS: Signal detection working!');
+                } else if (result.includes('ERROR')) {
+                    updateStatus('ERROR: Test failed', 'error');
+                    addResult('❌ ERROR: Test failed');
+                } else {
+                    updateStatus('WARNING: No clear signal detected', 'warning');
+                    addResult('⚠️ WARNING: No clear signal detected');
+                }
+                
+            } catch (error) {
+                updateStatus('ERROR: ' + error.message, 'error');
+                addResult('❌ Test failed: ' + error.message);
+            }
+        }
+        
+        // Auto-start test on load
+        window.addEventListener('load', () => {
+            updateStatus('Ready to test', '');
+            addResult('🚀 Page loaded, ready for testing...');
+        });
+    </script>
+</body>
+</html>

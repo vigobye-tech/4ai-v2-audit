@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Immediate Signal Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-box { border: 2px solid #007ACC; padding: 15px; margin: 10px 0; }
+        .status { font-weight: bold; color: #007ACC; }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Natychmiastowych Sygnałów DOM</h1>
+    
+    <div class="test-box">
+        <h3>Test 1: Immediate DOM Signal Check</h3>
+        <div id="test1-status" class="status">Preparing...</div>
+        <button onclick="testImmediateSignal()">Start Immediate Test</button>
+    </div>
+    
+    <div class="test-box">
+        <h3>Test 2: Claude Service Communication</h3>
+        <div id="test2-status" class="status">Waiting...</div>
+        <button onclick="testClaudeSignal()">Test Claude Signal</button>
+    </div>
+    
+    <div class="test-box">
+        <h3>Test 3: Title-Based Communication</h3>
+        <div id="test3-status" class="status">Ready...</div>
+        <button onclick="testTitleSignal()">Test Title Signal</button>
+    </div>
+
+    <div id="debug-output" style="margin-top: 20px; padding: 10px; background: #f5f5f5; font-family: monospace; white-space: pre-wrap;"></div>
+
+    <script>
+        const debugOutput = document.getElementById('debug-output');
+        
+        function log(message) {
+            console.log(message);
+            debugOutput.textContent += new Date().toISOString() + ': ' + message + '\n';
+            debugOutput.scrollTop = debugOutput.scrollHeight;
+        }
+
+        async function testImmediateSignal() {
+            const status = document.getElementById('test1-status');
+            status.textContent = 'Testing...';
+            status.className = 'status';
+            
+            try {
+                log('🔧 Starting immediate DOM signal test...');
+                
+                // Test simple WebView creation
+                const result = await window.__TAURI__.tauri.invoke('test_immediate_signal');
+                
+                log('📊 Result: ' + result);
+                
+                if (result.includes('SUCCESS') || result.includes('HAS_SIGNAL:true')) {
+                    status.textContent = 'SUCCESS: Signal detected!';
+                    status.className = 'status success';
+                } else if (result.includes('ERROR')) {
+                    status.textContent = 'ERROR: Test failed';
+                    status.className = 'status error';
+                } else {
+                    status.textContent = 'WARNING: No clear signal';
+                    status.className = 'status warning';
+                }
+                
+            } catch (error) {
+                log('❌ Error: ' + error);
+                status.textContent = 'ERROR: ' + error.message;
+                status.className = 'status error';
+            }
+        }
+
+        async function testClaudeSignal() {
+            const status = document.getElementById('test2-status');
+            status.textContent = 'Testing...';
+            status.className = 'status';
+            
+            try {
+                log('🤖 Testing Claude service communication...');
+                
+                const result = await window.__TAURI__.tauri.invoke('test_claude_monitoring', {
+                    prompt: 'Hello Claude, respond with "TEST_SUCCESS" if you receive this message.'
+                });
+                
+                log('🤖 Claude result: ' + result);
+                
+                if (result.includes('TEST_SUCCESS')) {
+                    status.textContent = 'SUCCESS: Claude responded!';
+                    status.className = 'status success';
+                } else if (result.includes('timeout')) {
+                    status.textContent = 'TIMEOUT: No response from Claude';
+                    status.className = 'status warning';
+                } else {
+                    status.textContent = 'PARTIAL: Response received but no test marker';
+                    status.className = 'status warning';
+                }
+                
+            } catch (error) {
+                log('❌ Claude error: ' + error);
+                status.textContent = 'ERROR: ' + error.message;
+                status.className = 'status error';
+            }
+        }
+
+        async function testTitleSignal() {
+            const status = document.getElementById('test3-status');
+            status.textContent = 'Testing...';
+            status.className = 'status';
+            
+            try {
+                log('📄 Testing title-based communication...');
+                
+                // Create simple test page
+                const testLabel = `title_test_${Date.now()}`;
+                
+                await window.__TAURI__.tauri.invoke('create_webview', {
+                    label: testLabel,
+                    url: 'data:text/html,<html><head><title>Title Test</title></head><body><script>setTimeout(() => { document.title = "SIGNAL_COMPLETE:true"; }, 1000);</script><h1>Title Test</h1></body></html>'
+                });
+                
+                log('✅ Test WebView created: ' + testLabel);
+                
+                // Wait and check for signal
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                const result = await window.__TAURI__.tauri.invoke('get_webview_title', {
+                    label: testLabel
+                });
+                
+                log('📄 Title result: ' + result);
+                
+                // Cleanup
+                await window.__TAURI__.tauri.invoke('close_webview', { label: testLabel });
+                
+                if (result.includes('SIGNAL_COMPLETE:true')) {
+                    status.textContent = 'SUCCESS: Title signal detected!';
+                    status.className = 'status success';
+                } else {
+                    status.textContent = 'WARNING: No title signal detected';
+                    status.className = 'status warning';
+                }
+                
+            } catch (error) {
+                log('❌ Title test error: ' + error);
+                status.textContent = 'ERROR: ' + error.message;
+                status.className = 'status error';
+            }
+        }
+
+        // Auto-start first test on load
+        window.addEventListener('load', () => {
+            log('🚀 Page loaded, ready for testing...');
+        });
+    </script>
+</body>
+</html>
