@@ -1,5 +1,14 @@
 export type AiServiceId = 'chatgpt' | 'claude' | 'gemini' | 'copilot';
 
+// Tauri API declarations
+declare global {
+  interface Window {
+    __TAURI__: {
+      invoke: (command: string, args?: Record<string, unknown>) => Promise<unknown>;
+    };
+  }
+}
+
 export interface AiService {
   name: string;
   url: string;

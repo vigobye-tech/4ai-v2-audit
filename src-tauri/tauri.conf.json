@@ -65,6 +65,8 @@
     },
     "security": {
       "csp": null,
+      "dangerousDisableAssetCspModification": true,
+      "freezePrototype": false,
       "dangerousRemoteDomainIpcAccess": [
         {
           "domain": "chat.openai.com",
@@ -83,6 +85,11 @@
         },
         {
           "domain": "gemini.google.com",
+          "windows": ["*"],
+          "plugins": ["*"]
+        },
+        {
+          "domain": "www.perplexity.ai",
           "windows": ["*"],
           "plugins": ["*"]
         }

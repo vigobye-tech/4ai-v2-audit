@@ -87,16 +87,33 @@ export function createContentStabilityMonitor(serviceId: string, primarySelector
           // Set monitor installed flag (for Rust compatibility)
           window.__4AI_MONITOR_INSTALLED = true;
           
-          // Create final response object (for Rust compatibility)
+          // ENHANCED: Create comprehensive response object for improved Rust compatibility
           window.__4AI_FINAL_RESPONSE = {
             completed: true,
             text: currentContent,
+            serviceId: '${serviceId}',
             reason: 'content_stability',
+            stable: true,
+            detectionTime: Date.now(),
             timestamp: Date.now()
           };
           
-          // Store content in a way Rust can retrieve it
+          // Store content in multiple ways for maximum Rust compatibility
           window.__4AI_CONTENT_RESULT = currentContent;
+          window.__4AI_EXTRACTED_CONTENT = currentContent;
+          window.__4AI_RESPONSE_READY = true;
+          
+          // Create chunked content for large responses
+          if (currentContent.length > 1000) {
+            const chunkSize = 800;
+            const chunks = [];
+            for (let i = 0; i < currentContent.length; i += chunkSize) {
+              chunks.push(currentContent.substring(i, i + chunkSize));
+            }
+            window.__4AI_CONTENT_CHUNKS = chunks;
+            window.__4AI_CHUNK_COUNT = chunks.length;
+            console.log('[CONTENT MONITOR] Created', chunks.length, 'content chunks for large response');
+          }
           
           // Create DOM signal element compatible with check_dom_signal
           const signalElement = document.createElement('div');
@@ -108,8 +125,8 @@ export function createContentStabilityMonitor(serviceId: string, primarySelector
           
           console.log('[CONTENT MONITOR] Signal element created:', signalElement.id);
           
-          // Set completion title (for Rust compatibility)
-          document.title = '4AI_COMPLETE_content_stable_' + currentContent.length;
+          // ENHANCED: Set multiple completion signals for maximum Rust compatibility
+          document.title = '[4AI_READY]' + Date.now() + '_content_stable_' + currentContent.length;
           
           console.log('[CONTENT MONITOR] Response ready:', currentContent.length, 'chars');
           return true; // Stop monitoring

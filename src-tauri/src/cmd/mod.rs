@@ -4,5 +4,7 @@ pub mod meta;
 pub mod webview;
 pub mod debate;
 pub mod dialog;
-pub mod history;
+pub mod history;  
 pub mod drop;
+pub mod logging;
+pub mod config;

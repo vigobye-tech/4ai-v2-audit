@@ -1,0 +1,204 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-09-25",
+  "models": {
+    "claude": {
+      "name": "Claude (Anthropic)",
+      "url": "https://claude.ai",
+      "capabilities": {
+        "reasoning": 9,
+        "creativity": 8,
+        "coding": 8,
+        "analysis": 9,
+        "writing": 9,
+        "multilingual": 7
+      },
+      "contextWindow": 200000,
+      "strengths": [
+        "Complex reasoning and analysis",
+        "Nuanced writing and editing",
+        "Ethical reasoning",
+        "Code review and explanation",
+        "Research synthesis"
+      ],
+      "weaknesses": [
+        "Real-time information (training cutoff)",
+        "Image generation",
+        "Mathematical computations"
+      ],
+      "optimalFor": [
+        "analysis",
+        "research",
+        "writing",
+        "ethics",
+        "code_review"
+      ],
+      "specializations": {
+        "academic_writing": 9,
+        "code_explanation": 8,
+        "creative_writing": 8,
+        "data_analysis": 9,
+        "legal_reasoning": 8
+      }
+    },
+    "chatgpt": {
+      "name": "ChatGPT (OpenAI)",
+      "url": "https://chatgpt.com",
+      "capabilities": {
+        "reasoning": 8,
+        "creativity": 9,
+        "coding": 9,
+        "analysis": 8,
+        "writing": 8,
+        "multilingual": 8
+      },
+      "contextWindow": 128000,
+      "strengths": [
+        "Code generation and debugging",
+        "Creative content generation",
+        "Conversational responses",
+        "Problem-solving",
+        "Wide general knowledge"
+      ],
+      "weaknesses": [
+        "Real-time information access",
+        "Consistency across long conversations",
+        "Factual accuracy verification"
+      ],
+      "optimalFor": [
+        "coding",
+        "brainstorming",
+        "general_qa",
+        "creative_tasks",
+        "tutoring"
+      ],
+      "specializations": {
+        "code_generation": 9,
+        "creative_writing": 9,
+        "conversation": 9,
+        "tutoring": 8,
+        "problem_solving": 8
+      }
+    },
+    "gemini": {
+      "name": "Gemini (Google)",
+      "url": "https://gemini.google.com",
+      "capabilities": {
+        "reasoning": 8,
+        "creativity": 7,
+        "coding": 8,
+        "analysis": 8,
+        "writing": 7,
+        "multilingual": 9
+      },
+      "contextWindow": 1000000,
+      "strengths": [
+        "Massive context window",
+        "Multilingual capabilities",
+        "Integration with Google services",
+        "Document processing",
+        "Real-time information (in some modes)"
+      ],
+      "weaknesses": [
+        "Less creative than competitors",
+        "Inconsistent response quality",
+        "Limited availability in some regions"
+      ],
+      "optimalFor": [
+        "document_processing",
+        "translation",
+        "large_context",
+        "multilingual",
+        "research"
+      ],
+      "specializations": {
+        "document_analysis": 9,
+        "translation": 9,
+        "multilingual": 9,
+        "large_context": 10,
+        "research": 8
+      }
+    }
+  },
+  "taskTypes": {
+    "creative_writing": {
+      "name": "Creative Writing",
+      "optimalModel": "chatgpt",
+      "alternativeModels": ["claude"],
+      "chainStrategy": "single_best"
+    },
+    "code_generation": {
+      "name": "Code Generation",
+      "optimalModel": "chatgpt", 
+      "alternativeModels": ["claude"],
+      "chainStrategy": "generate_then_review"
+    },
+    "code_review": {
+      "name": "Code Review",
+      "optimalModel": "claude",
+      "alternativeModels": ["chatgpt"],
+      "chainStrategy": "single_best"
+    },
+    "academic_analysis": {
+      "name": "Academic Analysis",
+      "optimalModel": "claude",
+      "alternativeModels": ["gemini"],
+      "chainStrategy": "analyze_then_verify"
+    },
+    "translation": {
+      "name": "Translation",
+      "optimalModel": "gemini",
+      "alternativeModels": ["claude"],
+      "chainStrategy": "translate_then_refine"
+    },
+    "research": {
+      "name": "Research",
+      "optimalModel": "gemini",
+      "alternativeModels": ["claude", "chatgpt"],
+      "chainStrategy": "multi_perspective"
+    },
+    "brainstorming": {
+      "name": "Brainstorming",
+      "optimalModel": "chatgpt",
+      "alternativeModels": ["claude"],
+      "chainStrategy": "generate_then_expand"
+    },
+    "document_processing": {
+      "name": "Document Processing",
+      "optimalModel": "gemini",
+      "alternativeModels": ["claude"],
+      "chainStrategy": "single_best"
+    }
+  },
+  "chainStrategies": {
+    "single_best": {
+      "description": "Use the single best model for the task",
+      "steps": 1
+    },
+    "generate_then_review": {
+      "description": "Generate with one model, review with another",
+      "steps": 2,
+      "roles": ["generator", "reviewer"]
+    },
+    "translate_then_refine": {
+      "description": "Translate with one model, refine with another",
+      "steps": 2,
+      "roles": ["translator", "refiner"]
+    },
+    "analyze_then_verify": {
+      "description": "Analyze with one model, verify with another",
+      "steps": 2,
+      "roles": ["analyzer", "verifier"]
+    },
+    "multi_perspective": {
+      "description": "Get multiple perspectives on the same topic",
+      "steps": 3,
+      "roles": ["researcher", "analyst", "synthesizer"]
+    },
+    "generate_then_expand": {
+      "description": "Generate ideas, then expand and develop them",
+      "steps": 2,
+      "roles": ["generator", "expander"]
+    }
+  }
+}

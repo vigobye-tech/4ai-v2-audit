@@ -2,6 +2,7 @@ use tauri::{command, Manager, WindowBuilder, WindowUrl};
 use serde_json;
 use tokio::time::sleep;
 use std::time::Duration;
+use crate::utils::{debug_log, log_with_context, log_error, log_success, log_warning};
 
 #[command]
 pub async fn create_webview(
@@ -9,15 +10,65 @@ pub async fn create_webview(
     label: String, 
     url: String
 ) -> Result<String, String> {
+    log_with_context("WEBVIEW", &format!("🚀 Creating webview: {} with URL: {}", label, url));
+    
+    // User-Agent dla kompatybilności z platformami AI
+    let user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+    
     let window_url = WindowUrl::External(url.parse().map_err(|e| format!("Invalid URL: {}", e))?);
     
-    WindowBuilder::new(&app, &label, window_url)
+    let window = WindowBuilder::new(&app, &label, window_url)
         .title(&format!("AI-{}", label))
-        .inner_size(900.0, 700.0)
+        .inner_size(1200.0, 800.0)
+        .center()
+        .user_agent(user_agent)
         .visible(true)
         .build()
         .map_err(|e| format!("Failed to create window: {}", e))?;
     
+    // Klonujemy parametry dla async operacji
+    let window_clone = window.clone();
+    let url_clone = url.clone();
+    let label_clone = label.clone();
+    
+    // Wymuszenie nawigacji po krótkim opóźnieniu
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(Duration::from_millis(500)).await;
+        
+        // Próba wymuszenia nawigacji przez JavaScript
+        let navigation_script = format!(
+            "if(window.location.href === 'about:blank' || window.location.href === '') {{ window.location.replace('{}'); }}",
+            url_clone
+        );
+        
+        if let Err(e) = window_clone.eval(&navigation_script) {
+            log_warning("WEBVIEW_NAV", &format!("Failed to navigate {}: {}", label_clone, e));
+        } else {
+            log_success("WEBVIEW_NAV", &format!("Navigation forced for {}: {}", label_clone, url_clone));
+        }
+        
+        // Dodatkowe sprawdzenie po kolejnym opóźnieniu
+        tokio::time::sleep(Duration::from_millis(2000)).await;
+        
+        let check_script = "window.location.href";
+        if let Ok(current_url) = window_clone.eval(check_script) {
+            println!("[DEBUG] 🌐 Final URL check for {}: {:?}", label_clone, current_url);
+            
+            // Jeśli nadal na about:blank, kolejna próba
+            if let Some(url_str) = current_url.as_str() {
+                if url_str.contains("about:blank") || url_str.is_empty() {
+                    let retry_script = format!("window.location.href = '{}';", url_clone);
+                    if let Err(e) = window_clone.eval(&retry_script) {
+                        println!("[DEBUG] ⚠️ Retry navigation failed for {}: {}", label_clone, e);
+                    } else {
+                        println!("[DEBUG] 🔄 Retry navigation attempted for {}", label_clone);
+                    }
+                }
+            }
+        }
+    });
+    
+    log_success("WEBVIEW", &format!("WebView created and navigation initiated: {}", label));
     Ok(format!("Window '{}' created successfully", label))
 }
 
@@ -512,6 +563,90 @@ pub async fn extract_monitored_content(
     Err("Failed to extract monitored content".to_string())
 }
 
+// NEW: Function to retrieve chunked content for large responses
+#[command]
+pub async fn get_full_content_chunks(
+    app: tauri::AppHandle,
+    label: String,
+    chunk_index: usize,
+) -> Result<String, String> {
+    println!("[DEBUG] get_full_content_chunks: label={}, chunk_index={}", label, chunk_index);
+    
+    let window = app
+        .get_window(&label)
+        .ok_or_else(|| "Window not found".to_string())?;
+
+    let retrieve_chunk_script = format!(r#"
+        (function() {{
+            console.log('[4AI CHUNK] Retrieving chunk {}');
+            
+            if (window.__4AI_CONTENT_CHUNKS && window.__4AI_CONTENT_CHUNKS.length > {}) {{
+                const chunk = window.__4AI_CONTENT_CHUNKS[{}];
+                console.log('[4AI CHUNK] Found chunk {}, length:', chunk.length);
+                return chunk;
+            }} else if (window.__4AI_EXTRACTED_CONTENT) {{
+                console.log('[4AI CHUNK] No chunks, returning full content');
+                return window.__4AI_EXTRACTED_CONTENT;
+            }} else {{
+                console.log('[4AI CHUNK] No content available');
+                return 'NO_CONTENT';
+            }}
+        }})();
+    "#, chunk_index, chunk_index, chunk_index, chunk_index);
+
+    match window.eval(&retrieve_chunk_script) {
+        Ok(result) => {
+            if let Some(chunk_content) = result.as_str() {
+                if chunk_content != "NO_CONTENT" && !chunk_content.is_empty() {
+                    println!("[DEBUG] Successfully retrieved chunk {}: {} chars", chunk_index, chunk_content.len());
+                    return Ok(chunk_content.to_string());
+                }
+            }
+            Ok("NO_CONTENT".to_string())
+        }
+        Err(e) => Err(format!("Failed to retrieve chunk: {}", e))
+    }
+}
+
+// NEW: Function to get chunk metadata
+#[command]
+pub async fn get_content_metadata(
+    app: tauri::AppHandle,
+    label: String,
+) -> Result<String, String> {
+    println!("[DEBUG] get_content_metadata: label={}", label);
+    
+    let window = app
+        .get_window(&label)
+        .ok_or_else(|| "Window not found".to_string())?;
+
+    let metadata_script = r#"
+        (function() {
+            const metadata = {
+                hasContent: !!window.__4AI_EXTRACTED_CONTENT,
+                contentLength: window.__4AI_EXTRACTED_CONTENT ? window.__4AI_EXTRACTED_CONTENT.length : 0,
+                hasChunks: !!window.__4AI_CONTENT_CHUNKS,
+                chunkCount: window.__4AI_CONTENT_CHUNKS ? window.__4AI_CONTENT_CHUNKS.length : 0,
+                hasMetadata: !!window.__4AI_CONTENT_METADATA
+            };
+            
+            console.log('[4AI META]', metadata);
+            return JSON.stringify(metadata);
+        })();
+    "#;
+
+    match window.eval(metadata_script) {
+        Ok(result) => {
+            if let Some(metadata_json) = result.as_str() {
+                println!("[DEBUG] Content metadata: {}", metadata_json);
+                return Ok(metadata_json.to_string());
+            }
+            Ok("{}".to_string())
+        }
+        Err(e) => Err(format!("Failed to get metadata: {}", e))
+    }
+}
+
 // Simplified version for Tauri 1.x - returns simple status instead of trying to extract content
 #[command]
 pub async fn wait_for_full_response(
@@ -597,56 +732,98 @@ pub async fn wait_for_full_response(
     for i in 0..max_iterations {
         sleep(Duration::from_millis(poll_interval)).await;
         
-        // Check if monitor signaled completion
-        let check_ready_script = r#"
+        // CRITICAL FIX: Direct content retrieval instead of just signaling
+        let check_and_extract_script = r#"
             (function() {
-                if (window.__4AI_RESPONSE_READY === true) {
-                    console.log('[4AI RUST] Response ready signal detected');
-                    return 'READY';
-                }
+                console.log('[4AI RUST] Checking for response completion...');
                 
-                // Also check title for ready signal
-                if (document.title.includes('[4AI_READY]')) {
-                    console.log('[4AI RUST] Title ready signal detected');
-                    return 'READY';
+                // Check if monitor signaled completion
+                if (window.__4AI_RESPONSE_READY === true || document.title.includes('[4AI_READY]')) {
+                    console.log('[4AI RUST] Response ready signal detected');
+                    
+                    // IMMEDIATE CONTENT RETRIEVAL - This is the critical fix
+                    if (window.__4AI_FINAL_RESPONSE && window.__4AI_FINAL_RESPONSE.completed) {
+                        const response = window.__4AI_FINAL_RESPONSE;
+                        console.log('[4AI RUST] ✅ DIRECT EXTRACTION SUCCESS:', response.text.length, 'chars');
+                        
+                        // Create safe, chunked content for Rust
+                        const safeContent = response.text.substring(0, 1000); // Safe limit for eval return
+                        
+                        // Store in multiple places for reliability
+                        window.__4AI_EXTRACTED_CONTENT = response.text;
+                        window.__4AI_SAFE_CONTENT = safeContent;
+                        
+                        // Signal with content length info
+                        document.title = '[4AI_CONTENT_EXTRACTED]' + response.text.length + '_' + Date.now();
+                        
+                        // Return truncated content directly - THIS IS THE KEY FIX
+                        return safeContent;
+                    }
+                    
+                    // If no monitored response, try direct DOM extraction as fallback
+                    console.log('[4AI RUST] No monitor response, trying direct DOM...');
+                    
+                    const elements = document.querySelectorAll({selector});
+                    for (let element of elements) {{
+                        const text = (element.textContent || element.innerText || '').trim();
+                        if (text.length > 50) {{
+                            const safeText = text.substring(0, 1000);
+                            window.__4AI_EXTRACTED_CONTENT = text;
+                            window.__4AI_SAFE_CONTENT = safeText;
+                            document.title = '[4AI_DOM_EXTRACTED]' + text.length + '_' + Date.now();
+                            console.log('[4AI RUST] ✅ DOM EXTRACTION SUCCESS:', text.length, 'chars');
+                            return safeText;
+                        }}
+                    }}
+                    
+                    console.log('[4AI RUST] ❌ No content found despite ready signal');
+                    return 'READY_NO_CONTENT';
                 }
                 
                 return 'NOT_READY';
             })();
-        "#;
+        "#.replace("{selector}", &serde_json::to_string(&selector).unwrap());
         
-        window.eval(check_ready_script)
-            .map_err(|e| format!("Ready check script failed: {}", e))?;
-        
-        // Check for ready signal and extract content directly
-        if let Ok(current_title) = window.title() {
-            if current_title.contains("[4AI_READY]") {
-                println!("[DEBUG] Detected ready signal in title: {}", current_title);
-                
-                // Try to extract content from monitor result
-                let extract_content_script = r#"
-                    (function() {
-                        if (window.__4AI_FINAL_RESPONSE && window.__4AI_FINAL_RESPONSE.completed) {
-                            const response = window.__4AI_FINAL_RESPONSE;
-                            console.log('[4AI RUST] Extracting monitored content:', response.text.length, 'chars');
-                            
-                            // Store content for retrieval
-                            window.__4AI_EXTRACTED_CONTENT = response.text;
-                            document.title = '[4AI_CONTENT_READY]' + Date.now();
-                            return true;
+        if let Ok(result) = window.eval(&check_and_extract_script) {
+            if let Some(result_str) = result.as_str() {
+                if result_str != "NOT_READY" && result_str != "READY_NO_CONTENT" {
+                    println!("[DEBUG] ✅ DIRECT CONTENT EXTRACTION SUCCESS: {} chars", result_str.len());
+                    
+                    // Try to get full content if available
+                    let get_full_content_script = r#"
+                        (function() {
+                            const fullContent = window.__4AI_EXTRACTED_CONTENT;
+                            if (fullContent && fullContent.length > 1000) {
+                                // For large content, store in chunks and return metadata  
+                                const chunkSize = 800;
+                                const chunks = [];
+                                for (let i = 0; i < fullContent.length; i += chunkSize) {
+                                    chunks.push(fullContent.substring(i, i + chunkSize));
+                                }
+                                window.__4AI_CONTENT_CHUNKS = chunks;
+                                return 'FULL_CONTENT_' + fullContent.length + '_' + chunks.length;
+                            } else if (fullContent) {
+                                return fullContent;
+                            }
+                            return 'NO_FULL_CONTENT';
+                        })();
+                    "#;
+                    
+                    if let Ok(full_result) = window.eval(get_full_content_script) {
+                        if let Some(full_str) = full_result.as_str() {
+                            if full_str.starts_with("FULL_CONTENT_") {
+                                println!("[DEBUG] Large content detected, returning metadata: {}", full_str);
+                                return Ok(full_str.to_string());
+                            } else if full_str != "NO_FULL_CONTENT" && !full_str.is_empty() {
+                                println!("[DEBUG] Full content retrieved: {} chars", full_str.len());
+                                return Ok(full_str.to_string());
+                            }
                         }
-                        
-                        console.log('[4AI RUST] No monitored content found, trying direct extraction');
-                        return false;
-                    })();
-                "#;
-                
-                window.eval(extract_content_script)
-                    .map_err(|e| format!("Content extraction script failed: {}", e))?;
-                
-                sleep(Duration::from_millis(100)).await;
-                
-                return Ok("EVENT_RESPONSE_READY".to_string());
+                    }
+                    
+                    // Return the direct result we got
+                    return Ok(result_str.to_string());
+                }
             }
         }
     }

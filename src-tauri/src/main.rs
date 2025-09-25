@@ -3,6 +3,7 @@
 use tauri::Manager;
 
 mod cmd;
+mod utils;
 
 fn main() {
     tauri::Builder::default()
@@ -17,6 +18,8 @@ fn main() {
             cmd::webview::wait_for_response_event,
             cmd::webview::extract_content_from_window,
             cmd::webview::extract_monitored_content,
+            cmd::webview::get_full_content_chunks,
+            cmd::webview::get_content_metadata,
             cmd::webview::get_text_content,
             cmd::webview::test_title_communication,
             cmd::webview::test_immediate_signal,
@@ -26,6 +29,14 @@ fn main() {
             cmd::dialog::open_local_file,
             cmd::history::get_dir_tree,
             cmd::drop::process_dropped,
+            cmd::logging::get_logs,
+            cmd::logging::clear_log_file,
+            cmd::logging::get_log_file_location,
+            cmd::logging::write_debug_log,
+            cmd::config::load_webai_selectors,
+            cmd::config::save_webai_selectors,
+            cmd::config::get_config_paths,
+            cmd::config::load_model_profiles,
         ])
         .setup(|app| {
             println!("Tauri app setup starting...");
