@@ -4,12 +4,27 @@
 export function createContentStabilityMonitor(serviceId: string, primarySelector: string): string {
   return `
 (function() {
-  console.log('[CONTENT MONITOR] Starting content stability monitoring for ${serviceId}');
+  // ULTIMATE TEST - CHECK IF DOCUMENT EXISTS
+  if (typeof document === 'undefined') {
+    console.error('DOCUMENT UNDEFINED IN WEBVIEW FOR ${serviceId}');
+    return 'DOCUMENT_UNDEFINED';
+  }
+  
+  // Try to set title
+  try {
+    document.title = 'JS-WORKS-FOR-${serviceId}';
+    console.log('🔥 TITLE SET SUCCESSFULLY FOR ${serviceId}');
+  } catch (e) {
+    console.error('TITLE SET FAILED FOR ${serviceId}:', e);
+  }
+  
+  console.log('[CONTENT MONITOR] Starting content stability monitoring for ' + '${serviceId}');
+  console.log('[CONTENT MONITOR] Primary selector for ' + '${serviceId}' + ':', '${primarySelector}');
   
   // Set monitor installation flag for Rust compatibility
   window.__4AI_MONITOR_INSTALLED = true;
   
-  // Service-specific response selectors
+  // Service-specific response selectors (with primary selector as first choice)
   const responseSelectors = {
     'claude': [
       'div[data-testid*="message"]',
@@ -38,7 +53,7 @@ export function createContentStabilityMonitor(serviceId: string, primarySelector
   let lastContent = '';
   let stableCount = 0;
   let contentLength = 0;
-  const STABILITY_THRESHOLD = 5; // 5 checks without content change = stable
+  const STABILITY_THRESHOLD = 2; // 2 checks without content change = stable (LASER FOCUS FIX)
   const CHECK_INTERVAL = 1000; // Check every 1 second
   
   function checkContent() {
@@ -106,6 +121,12 @@ export function createContentStabilityMonitor(serviceId: string, primarySelector
           stableCount = 0;
           lastContent = currentContent;
           contentLength = currentContent.length;
+        } else if (currentContent !== lastContent) {
+          console.log('[CONTENT MONITOR] ⚠️ Content changed but not growing! Was:', lastContent.length, 'chars, now:', currentContent.length, 'chars');
+          console.log('[CONTENT MONITOR] ⚠️ Reset stability counter. Old stable count was:', stableCount);
+          console.log('[CONTENT MONITOR] Content changed but same length - resetting stability');
+          stableCount = 0;
+          lastContent = currentContent;
         }
       }
       

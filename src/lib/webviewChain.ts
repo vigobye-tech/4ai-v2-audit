@@ -111,8 +111,25 @@ export async function runWebViewChain(
         logger.error('webview', `waitForFullResponse did not return valid result for ${serviceId}: ${waitResult}`);
         throw new Error(`waitForFullResponse did not return valid result for ${serviceId}: ${waitResult}`);
       }
-      // Check for event-driven completion signal
-      if (waitResult === "EVENT_RESPONSE_READY") {
+      // Check for new SUCCESS_CONTENT and SUCCESS_EARLY results with embedded content
+      if (typeof waitResult === 'string' && (waitResult.startsWith("SUCCESS_CONTENT:") || waitResult.startsWith("SUCCESS_EARLY:"))) {
+        console.log(`[CHAIN DEBUG] Got success result with content embedded!`);
+        
+        const contentStart = waitResult.indexOf(':') + 1;
+        if (contentStart > 0 && contentStart < waitResult.length) {
+          currentPrompt = waitResult.substring(contentStart);
+          console.log(`[CHAIN DEBUG] Extracted embedded content:`, currentPrompt.length, 'chars');
+          console.log(`[CHAIN DEBUG] Content preview:`, currentPrompt.substring(0, 100));
+          
+          if (currentPrompt.trim().length === 0) {
+            throw new Error('Embedded content is empty');
+          }
+        } else {
+          throw new Error('Could not extract content from success result');
+        }
+        
+      // Check for event-driven completion signal (fallback)
+      } else if (waitResult === "EVENT_RESPONSE_READY") {
         console.log(`[CHAIN DEBUG] Got event-driven completion signal, retrieving response...`);
         
         // Use new monitored content extraction

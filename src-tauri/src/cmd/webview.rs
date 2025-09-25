@@ -44,8 +44,42 @@ pub async fn inject_script(
         .get_window(&label)
         .ok_or_else(|| "Window not found".to_string())?;
 
-    let result = window.eval(&script).map_err(|e| format!("Script execution failed: {}", e))?;
-    println!("[DEBUG] Script executed successfully, result: {:?}", result);
+    // Test URL BEFORE delay
+    let url_before = window.eval("window.location.href");
+    match url_before {
+        Ok(val) => println!("[DEBUG] 🌐 URL BEFORE delay: {:?}", val),
+        Err(e) => println!("[DEBUG] ❌ URL test (before) failed: {}", e)
+    }
+    
+    // CRITICAL: Wait for page to load before injecting script
+    println!("[DEBUG] Waiting 10 seconds for page to fully load...");
+    tokio::time::sleep(tokio::time::Duration::from_millis(10000)).await;
+    
+    // Test current URL AFTER delay
+    let url_after = window.eval("window.location.href");
+    match url_after {
+        Ok(val) => println!("[DEBUG] 🌐 URL AFTER delay: {:?}", val),
+        Err(e) => println!("[DEBUG] ❌ URL test (after) failed: {}", e)
+    }
+    
+    // Test basic JS execution
+    println!("[DEBUG] Testing basic JavaScript execution...");
+    let basic_test = window.eval("console.log('BASIC JS TEST WORKS'); 1+1");
+    match basic_test {
+        Ok(val) => println!("[DEBUG] ✅ Basic JS test passed: {:?}", val),
+        Err(e) => println!("[DEBUG] ❌ Basic JS test failed: {}", e)
+    }
+    
+    let result = window.eval(&script);
+    match result {
+        Ok(val) => {
+            println!("[DEBUG] Script executed successfully, result: {:?}", val);
+        },
+        Err(e) => {
+            println!("[DEBUG] ❌ SCRIPT EXECUTION FAILED: {}", e);
+            return Err(format!("Script execution failed: {}", e));
+        }
+    }
     
     // Check title immediately after script injection
     if let Ok(title_after) = window.title() {
@@ -453,7 +487,8 @@ pub async fn extract_monitored_content(
                                     .and_then(|s| s.split("[/4AI_CONTENT]").next()) {
                                     
                                     // Decode base64 content
-                                    if let Ok(decoded_bytes) = base64::decode(encoded_content) {
+                                    use base64::{Engine as _, engine::general_purpose};
+                                    if let Ok(decoded_bytes) = general_purpose::STANDARD.decode(encoded_content) {
                                         if let Ok(decoded_content) = String::from_utf8(decoded_bytes) {
                                             println!("[DEBUG] Successfully decoded content from title: {} chars", decoded_content.len());
                                             return Ok(decoded_content);
